@@ -4,6 +4,7 @@ const state = {
         timeLeft: document.querySelector("#time-left"),
         score: document.querySelector("#score"),
         startButton: document.querySelector(".start-game"), // Seleciona o botão de início
+        livesLeft: document.querySelector("#lives-left"),
     },
 
     values: {
@@ -12,6 +13,7 @@ const state = {
         result: 0,
         currentTime: 60,
         delay: 1000,
+        currentLives: 5,
     },
 
     actions: {
@@ -64,12 +66,22 @@ function addListenerHitbox() {
 function hitHandler(event) {
     const square = event.currentTarget; // Obtém o quadrado atual
     if (square.id === state.values.hitPosition) {
-        state.values.result++;
+        state.values.result++;  //Aumenta o ponto
         state.view.score.textContent = state.values.result; // Atualiza o placar
         state.values.hitPosition = null; // Reseta a posição do hit
         playSound("hit");
     } else {
+        state.values.currentLives--; //Diminui 1 vida
+        state.view.livesLeft.textContent = state.values.currentLives; //Atualiza a quantidade de vida
         playSound("wronghit");
+
+        // Verifica se as vidas chegaram a 0
+        if (state.values.currentLives <= 0) {
+            clearInterval(state.actions.timerId); // Para o temporizador de mudança de quadrados
+            clearInterval(state.actions.countDownTimerId); // Para o temporizador de contagem regressiva
+            disableHitboxes(); // Desativa os eventos de clique nos quadrados
+            playSound("gameover"); // Toca o som de game over
+        }
     }
 }
 
@@ -84,8 +96,10 @@ function disableHitboxes() {
 function initialize() {
     state.values.result = 0; // Reseta a pontuação
     state.values.currentTime = 60; // Reseta o tempo
+    state.values.currentLives = 5;
     state.view.score.textContent = state.values.result; // Atualiza o placar
     state.view.timeLeft.textContent = state.values.currentTime; // Atualiza o tempo
+    state.view.livesLeft.textContent = state.values.currentLives; //Atualiza a vida
 
     clearInterval(state.actions.timerId); // Limpa temporizadores anteriores
     clearInterval(state.actions.countDownTimerId); // Limpa temporizadores de contagem regressiva
@@ -101,6 +115,8 @@ function startGame() {
     initialize(); // Inicializa o jogo
     state.actions.timerId = setInterval(randomSquare, state.values.gameVelocity); // Inicia o intervalo para quadrados
     state.actions.countDownTimerId = setInterval(countDown, state.values.delay); // Inicia o intervalo da contagem regressiva
+
+    
 }
 
 // Adiciona o listener ao botão de "NEW GAME"
