@@ -1,80 +1,107 @@
 const state = {
-    view:{
+    view: {
         squares: document.querySelectorAll(".square"),
-        enemy: document.querySelector(".enemy"),
         timeLeft: document.querySelector("#time-left"),
         score: document.querySelector("#score"),
+        startButton: document.querySelector(".start-game"), // Seleciona o botão de início
     },
 
-    values:{
-        
+    values: {
         gameVelocity: 600,
-        hitPosition: 0,
+        hitPosition: null,
         result: 0,
         currentTime: 60,
+        delay: 1000,
     },
 
     actions: {
-        timerId: setInterval(randomSquare, 600),
-        countDownTimerId: setInterval(countDown, 1000),
+        timerId: null, // Inicializa como null
+        countDownTimerId: null, // Inicializa como null
     },
 };
 
-function playSound(audioName){
+// Função para tocar o som
+function playSound(audioName) {
     let audio = new Audio(`./src/audios/${audioName}.m4a`);
     audio.volume = 0.12;
     audio.play();
 }
 
+// Função para fazer a contagem regressiva
 function countDown() {
-    state.values.currentTime --;
+    state.values.currentTime--;
     state.view.timeLeft.textContent = state.values.currentTime;
 
-    if(state.values.currentTime === 0) {
-
-        if(state.values.result === 0) {
-            clearInterval(state.actions.countDownTimerId)
-            clearInterval(state.actions.timerId)
-            clearInterval(state.values.hitPosition = null)
-            playSound("fail");
-        } else {
-        clearInterval(state.actions.countDownTimerId)
-        clearInterval(state.actions.timerId)
-        clearInterval(state.values.hitPosition = null)
-        playSound("gameover");
-        }        
+    if (state.values.currentTime === 0) {
+        clearInterval(state.actions.countDownTimerId); // Para o temporizador de contagem regressiva
+        clearInterval(state.actions.timerId); // Para o temporizador de mudança de quadrados
+        disableHitboxes(); // Desativa os eventos de clique nos quadrados
+        playSound(state.values.result === 0 ? "fail" : "gameover"); // Toca o som apropriado
     }
 }
 
+// Função para selecionar um quadrado aleatório
 function randomSquare() {
     state.view.squares.forEach((square) => {
-        square.classList.remove("enemy");
+        square.classList.remove("enemy"); // Remove a classe de inimigo de todos os quadrados
     });
 
     let randomNumber = Math.floor(Math.random() * 9);
     let randomSquare = state.view.squares[randomNumber];
-    randomSquare.classList.add("enemy");
-    state.values.hitPosition = randomSquare.id;
+    randomSquare.classList.add("enemy"); // Adiciona a classe de inimigo ao quadrado aleatório
+    state.values.hitPosition = randomSquare.id; // Atualiza a posição do hit
 }
 
-function addListenerHitbox(){
-    state.view.squares.forEach((square) =>{
-        square.addEventListener("mousedown", () =>  {
-            if(square.id === state.values.hitPosition){
-                state.values.result++;
-                state.view.score.textContent = state.values.result;
-                state.values.hitPosition = null
-                playSound("hit");
-            } else {
-                playSound("wronghit");
-            }
-        });
+// Função para adicionar o listener aos quadrados
+function addListenerHitbox() {
+    state.view.squares.forEach((square) => {
+        square.removeEventListener("mousedown", hitHandler); // Remove listeners existentes para evitar duplicação
+        square.addEventListener("mousedown", hitHandler); // Adiciona o listener ao quadrado
     });
 }
 
-function initialize(){
-    alert("Bem vindo! aperte (ok) para começar!")
-    addListenerHitbox();
+// Função para lidar com o hit
+function hitHandler(event) {
+    const square = event.currentTarget; // Obtém o quadrado atual
+    if (square.id === state.values.hitPosition) {
+        state.values.result++;
+        state.view.score.textContent = state.values.result; // Atualiza o placar
+        state.values.hitPosition = null; // Reseta a posição do hit
+        playSound("hit");
+    } else {
+        playSound("wronghit");
+    }
 }
 
-initialize();
+// Função para desativar os quadrados
+function disableHitboxes() {
+    state.view.squares.forEach((square) => {
+        square.removeEventListener("mousedown", hitHandler); // Remove o listener de hit
+    });
+}
+
+// Função para inicializar o jogo
+function initialize() {
+    state.values.result = 0; // Reseta a pontuação
+    state.values.currentTime = 60; // Reseta o tempo
+    state.view.score.textContent = state.values.result; // Atualiza o placar
+    state.view.timeLeft.textContent = state.values.currentTime; // Atualiza o tempo
+
+    clearInterval(state.actions.timerId); // Limpa temporizadores anteriores
+    clearInterval(state.actions.countDownTimerId); // Limpa temporizadores de contagem regressiva
+
+    // Remove a classe "enemy" de todos os quadrados
+    state.view.squares.forEach(square => square.classList.remove("enemy"));
+
+    addListenerHitbox(); // Adiciona o listener para os quadrados
+}
+
+// Função para iniciar o jogo
+function startGame() {
+    initialize(); // Inicializa o jogo
+    state.actions.timerId = setInterval(randomSquare, state.values.gameVelocity); // Inicia o intervalo para quadrados
+    state.actions.countDownTimerId = setInterval(countDown, state.values.delay); // Inicia o intervalo da contagem regressiva
+}
+
+// Adiciona o listener ao botão de "NEW GAME"
+state.view.startButton.addEventListener("click", startGame); // Chama a função startGame ao clicar no botão
